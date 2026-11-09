@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" data-theme="black">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grizzly Utility - System & Network Toolkit</title>
+
+    <!-- PWA & Theme Integration -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="icon.png">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- QRCode Generator Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+    <!-- FontAwesome for clean iconography -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --accent-color: #10b981;
+            --page-bg: #000000;
+            --page-fg: #f1f5f9;
+            --panel-bg: #18181b;
+            --bar-bg: rgba(0, 0, 0, 0.95);
+            --nav-bg: #09090b;
+            --bar-border: #27272a;
+        }
+        [data-theme="dark"] {
+            --page-bg: #0f172a;
+            --panel-bg: #1e293b;
+            --bar-bg: rgba(15, 23, 42, 0.95);
+            --nav-bg: #020617;
+            --bar-border: #1e293b;
+        }
+        [data-theme="light"] {
+            --page-bg: #f1f5f9;
+            --page-fg: #1e293b;
+            --panel-bg: #ffffff;
+            --bar-bg: rgba(255, 255, 255, 0.95);
+            --nav-bg: #e2e8f0;
+            --bar-border: #cbd5e1;
+        }
+
+        body { background-color: var(--page-bg); color: var(--page-fg); }
+        .panel-bg { background-color: var(--panel-bg); }
+        .app-header { background-color: var(--bar-bg); border-color: var(--bar-border); }
+        .app-nav { background-color: var(--nav-bg); border-color: var(--bar-border); }
+        .tab-btn.active { border-color: var(--accent-color); }
+
+        .accent-text { color: var(--accent-color) !important; }
+        .accent-bg { background-color: var(--accent-color) !important; }
+        .accent-border { border-color: var(--accent-color) !important; }
+        input[type=range], input[type=checkbox] { accent-color: var(--accent-color); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Light theme adjustments */
+        [data-theme="light"] .bg-black,
+        [data-theme="light"] .bg-black\/40,
+        [data-theme="light"] .bg-black\/50 { background-color: #f1f5f9; }
+        [data-theme="light"] .bg-zinc-800 { background-color: #e2e8f0; }
+        [data-theme="light"] .bg-zinc-900,
+        [data-theme="light"] .bg-zinc-900\/40 { background-color: #f8fafc; }
+        [data-theme="light"] .hover\:bg-zinc-700:hover { background-color: #cbd5e1; }
+        [data-theme="light"] .border-zinc-800,
+        [data-theme="light"] .border-zinc-700 { border-color: #cbd5e1; }
+        [data-theme="light"] .text-white:not(.accent-bg),
+        [data-theme="light"] .text-zinc-100,
+        [data-theme="light"] .text-zinc-200,
+        [data-theme="light"] .text-zinc-300 { color: #1e293b; }
+        [data-theme="light"] .text-zinc-400,
+        [data-theme="light"] .text-zinc-500 { color: #64748b; }
+        [data-theme="light"] .accent-bg { color: #ffffff; }
+    </style>
+</head>
+<body id="appBody" class="min-h-screen flex flex-col font-sans transition-colors duration-200 select-none pb-28">
+
+    <!-- TOP HEADER -->
+    <header id="appHeader" class="app-header sticky top-0 z-35 backdrop-blur-md border-b px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <img src="small-icon.png" alt="Logo" class="w-9 h-9 rounded-full object-cover border border-zinc-700 shadow-sm" />
+            <div>
+                <h1 id="appTitleHeader" class="text-base font-bold tracking-tight leading-none text-emerald-400">GRIZZLY UTILITY</h1>
+                <p class="text-[10px] text-zinc-400 font-medium">System & Network Toolkit</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="openSettingsBtn" aria-label="Open settings" class="p-2.5 rounded-xl text-zinc-300 hover:bg-zinc-800/50 transition">
+                <i class="fa-solid fa-gear text-lg"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav id="appNav" class="app-nav border-b px-4 pt-2">
+        <div class="flex space-x-1 sm:space-x-2 overflow-x-auto no-scrollbar max-w-4xl mx-auto" id="navTabs">
+            <button data-tab="qr" class="tab-btn active px-4 py-2.5 text-xs font-semibold rounded-t-lg border-b-2 accent-text flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-qrcode"></i> <span>QR Studio</span>
+            </button>
+            <button data-tab="tracker" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-link-slash"></i> <span>Tracker Remover</span>
+            </button>
+            <button data-tab="network" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-network-wired"></i> <span>Network & Ping</span>
+            </button>
+            <button data-tab="device" class="tab-btn px-4 py-2.5 text-xs font-medium rounded-t-lg text-zinc-400 hover:text-zinc-200 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-mobile-screen"></i> <span>Device Inspector</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-[60] hidden px-4 py-2 rounded-xl bg-zinc-800 text-zinc-100 text-xs font-medium shadow-xl border border-zinc-700 max-w-[90vw] text-center"></div>
+
+    <!-- MAIN VIEW AREA -->
+    <main class="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 space-y-4">
+
+        <!-- TAB 1: QR STUDIO -->
+        <section id="view-qr" class="tab-view space-y-4">
+            <div class="panel-bg p-4 sm:p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4">
+                <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-qrcode accent-text"></i> QR Code Generator & Embedder
+                </h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-zinc-300">Data / URL to Encode</label>
+                        <textarea id="qrInput" rows="3" placeholder="https://reaper-357.github.io..." class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"></textarea>
+                    </div>
+                    <div class="flex flex-wrap gap-4 items-center text-xs">
+                        <label class="flex items-center space-x-2 cursor-pointer">
+                            <input type="checkbox" id="qrCenterLogo" checked class="w-4 h-4 rounded">
+                            <span class="text-zinc-300 font-semibold">Embed Logo in Center</span>
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-zinc-400">Logo Choice:</span>
+                            <select id="qrLogoType" class="bg-black border border-zinc-800 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none">
+                                <option value="small-icon">small-icon.png (Avatar)</option>
+                                <option value="paw">Bear Paw Emoji 🐾</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QR Output Card -->
+            <div class="panel-bg p-6 rounded-3xl border border-zinc-800 shadow-sm flex flex-col items-center justify-center space-y-4 text-center">
+                <div id="qrContainer" class="relative p-4 bg-white rounded-2xl shadow-inner inline-flex items-center justify-center"></div>
+                <div class="flex gap-2">
+                    <button id="btnDownloadQr" class="px-4 py-2 text-xs font-semibold accent-bg text-white rounded-xl shadow-md transition flex items-center space-x-1.5">
+                        <i class="fa-solid fa-download"></i> <span>Download QR Image</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: TRACKER REMOVER -->
+        <section id="view-tracker" class="tab-view hidden space-y-4">
+            <div class="panel-bg p-4 sm:p-6 rounded-3xl border border-zinc-800 shadow-sm space-y-4">
+                <div>
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-link-slash accent-text"></i> URL Tracker Stripper
+                    </h2>
+                    <p class="text-xs text-zinc-400 mt-0.5">Clean tracking parameters (utm_*, fbclid, gclid, si, etc.) before sharing links.</p>
+                </div>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold mb-1 text-zinc-300">Messy Tracked URL</label>
+                        <textarea id="trackedUrlInput" rows="3" placeholder="https://example.com/article?utm_source=twitter&fbclid=12345..." class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"></textarea>
+                    </div>
+                    <button id="btnCleanUrl" class="w-full py-2.5 text-xs font-semibold accent-bg text-white rounded-xl shadow-md transition">
+                        Strip Trackers & Clean URL
+                    </button>
+                </div>
+                <div class="space-y-1 pt-2 border-t border-zinc-800">
+                    <label class="block text-xs font-semibold text-zinc-300">Clean Shareable URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="cleanUrlOutput" readonly placeholder="Clean URL will appear here..." class="w-full px-3 py-2 bg-black border border-zinc-800 rounded-xl text-xs text-emerald-400 font-mono select-all">
+                        <button id="btnCopyCleanUrl" class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-semibold transition whitespace-nowrap">
+                            <i class="fa-solid fa-copy mr-1"></i> Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: NETWORK & PING -->
+        <section id="view-network" class="tab-view hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Ping & Latency Panel -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                        <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-tower-cell accent-text"></i> Ping & Latency
+                        </h3>
+                        <button id="btnRunPing" class="px-3 py-1.5 text-xs font-semibold accent-bg text-white rounded-xl shadow-md transition">Run Test</button>
+                    </div>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Cloudflare (1.1.1.1)</span>
+                            <span id="pingCloudflare" class="font-bold text-zinc-200">-- ms</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Google DNS (8.8.8.8)</span>
+                            <span id="pingGoogle" class="font-bold text-zinc-200">-- ms</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">NextDNS</span>
+                            <span id="pingNextDns" class="font-bold text-zinc-200">-- ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection & Location Inspector -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                        <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-globe accent-text"></i> Network & Location
+                        </h3>
+                        <button id="btnFetchLocation" class="px-3 py-1.5 text-xs font-semibold bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl transition">Check IP</button>
+                    </div>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Status</span>
+                            <span id="netStatus" class="font-bold text-emerald-400">Online</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Public IP</span>
+                            <span id="netPublicIp" class="font-bold text-zinc-200">Checking...</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Location Context</span>
+                            <span id="netGeoLocation" class="font-bold text-zinc-200">Phnom Penh, KH</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Speed Estimator -->
+            <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-3">
+                <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+                    <h3 class="text-xs font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-gauge-high accent-text"></i> Quick Bandwidth Estimator
+                    </h3>
+                    <button id="btnRunSpeed" class="px-3 py-1.5 text-xs font-semibold accent-bg text-white rounded-xl shadow-md transition">Test Speed</button>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-center">
+                    <div class="p-4 rounded-2xl bg-black/40 border border-zinc-800">
+                        <span class="block text-[10px] text-zinc-400 font-mono uppercase">Est. Speed</span>
+                        <span id="speedDisplay" class="text-lg font-bold accent-text">-- Mbps</span>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-black/40 border border-zinc-800">
+                        <span class="block text-[10px] text-zinc-400 font-mono uppercase">Transfer Time</span>
+                        <span id="speedTimeDisplay" class="text-lg font-bold text-zinc-200">-- ms</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: DEVICE INSPECTOR -->
+        <section id="view-device" class="tab-view hidden space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- Battery & Power -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-3">
+                    <h3 class="text-xs font-bold text-white border-b border-zinc-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-battery-half accent-text"></i> Battery & Power State
+                    </h3>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Level</span>
+                            <span id="battLevel" class="font-bold accent-text">--%</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Status</span>
+                            <span id="battStatus" class="font-bold text-zinc-200">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Storage & Quota -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-3">
+                    <h3 class="text-xs font-bold text-white border-b border-zinc-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-hard-drive accent-text"></i> Storage & Memory
+                    </h3>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Storage Used</span>
+                            <span id="storageUsed" class="font-bold text-zinc-200">-- MB</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Storage Quota</span>
+                            <span id="storageQuota" class="font-bold text-zinc-200">-- GB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Display & Screen -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-3">
+                    <h3 class="text-xs font-bold text-white border-b border-zinc-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-desktop accent-text"></i> Screen & Viewport
+                    </h3>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Viewport Size</span>
+                            <span id="screenViewport" class="font-bold text-zinc-200">-- x --</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Device Pixel Ratio (DPR)</span>
+                            <span id="screenDpr" class="font-bold text-zinc-200">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Environment -->
+                <div class="panel-bg p-5 rounded-3xl border border-zinc-800 space-y-3">
+                    <h3 class="text-xs font-bold text-white border-b border-zinc-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-microchip accent-text"></i> System Environment
+                    </h3>
+                    <div class="space-y-2 text-xs font-mono">
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Platform</span>
+                            <span id="sysPlatform" class="font-bold text-zinc-200">--</span>
+                        </div>
+                        <div class="flex justify-between p-2 rounded-xl bg-black/40 border border-zinc-800">
+                            <span class="text-zinc-400">Logical Cores</span>
+                            <span id="sysCores" class="font-bold text-zinc-200">--</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settingsModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="panel-bg w-full max-w-sm rounded-3xl p-6 border border-zinc-800 shadow-2xl space-y-5 text-center relative">
+            <button class="closeModalBtn absolute top-4 right-4 text-zinc-400 hover:text-white text-lg" aria-label="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <img src="icon.png" alt="Grizzly Utility Logo" class="w-32 h-32 mx-auto rounded-2xl object-cover border-2 border-zinc-700 shadow-lg mb-2" />
+
+            <h3 class="text-base font-bold text-white">Grizzly Utility Settings</h3>
+            <p class="text-xs text-zinc-400">Customize theme and accent color</p>
+
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">App Background Theme</span>
+                <div class="grid grid-cols-3 gap-2 pt-1">
+                    <button onclick="setAppTheme('black')" id="themeBtn-black" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-zinc-900 border border-zinc-700 text-white transition">Pure Black</button>
+                    <button onclick="setAppTheme('dark')" id="themeBtn-dark" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-zinc-800 border border-zinc-700 text-zinc-300 transition">Dark</button>
+                    <button onclick="setAppTheme('light')" id="themeBtn-light" class="py-1.5 px-2 rounded-xl text-xs font-medium bg-slate-200 border border-slate-300 text-slate-800 transition">Light</button>
+                </div>
+            </div>
+
+            <div class="bg-black/50 p-3 rounded-2xl border border-zinc-800 space-y-2 text-left">
+                <span class="text-xs font-semibold text-zinc-300">Accent Color</span>
+                <div class="flex items-center justify-around pt-2">
+                    <button aria-label="Green accent" onclick="setAccentColor('#10b981')" class="w-7 h-7 rounded-full bg-emerald-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Red accent" onclick="setAccentColor('#ef4444')" class="w-7 h-7 rounded-full bg-red-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Blue accent" onclick="setAccentColor('#3b82f6')" class="w-7 h-7 rounded-full bg-blue-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Purple accent" onclick="setAccentColor('#a855f7')" class="w-7 h-7 rounded-full bg-purple-500 hover:scale-110 transition-transform shadow"></button>
+                    <button aria-label="Amber accent" onclick="setAccentColor('#f59e0b')" class="w-7 h-7 rounded-full bg-amber-500 hover:scale-110 transition-transform shadow"></button>
+                </div>
+            </div>
+
+            <div class="text-center pt-2">
+                <p class="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Made by REAPER-357</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        /* ---------- Theme & Accent ---------- */
+        function setAccentColor(hex) {
+            localStorage.setItem('gu_accent_color', hex);
+            document.documentElement.style.setProperty('--accent-color', hex);
+            document.getElementById('appTitleHeader').style.color = hex;
+        }
+
+        function setAppTheme(theme) {
+            if (!['black', 'dark', 'light'].includes(theme)) theme = 'black';
+            localStorage.setItem('gu_app_theme', theme);
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.classList.toggle('dark', theme !== 'light');
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', { black: '#000000', dark: '#0f172a', light: '#f1f5f9' }[theme]);
+        }
+
+        function initPreferences() {
+            setAccentColor(localStorage.getItem('gu_accent_color') || '#10b981');
+            setAppTheme(localStorage.getItem('gu_app_theme') || 'black');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 2500);
+        }
+
+        /* ---------- Tab Navigation ---------- */
+        document.querySelectorAll('#navTabs button').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#navTabs button').forEach(t => {
+                    t.classList.remove('active', 'border-b-2', 'accent-text', 'font-semibold');
+                    t.classList.add('text-zinc-400', 'font-medium');
+                });
+                tab.classList.add('active', 'border-b-2', 'accent-text', 'font-semibold');
+                tab.classList.remove('text-zinc-400', 'font-medium');
+
+                const target = tab.getAttribute('data-tab');
+                document.querySelectorAll('.tab-view').forEach(v => v.classList.add('hidden'));
+                document.getElementById(`view-${target}`).classList.remove('hidden');
+
+                if (target === 'network') runNetworkChecks();
+                if (target === 'device') runDeviceChecks();
+            });
+        });
+
+        /* ---------- Tab 1: QR Generator ---------- */
+        const qrInput = document.getElementById('qrInput');
+        const qrCenterLogo = document.getElementById('qrCenterLogo');
+        const qrLogoType = document.getElementById('qrLogoType');
+        const qrContainer = document.getElementById('qrContainer');
+
+        function generateQR() {
+            const text = qrInput.value.trim() || 'https://reaper-357.github.io';
+            try {
+                const qr = qrcode(4, 'H');
+                qr.addData(text);
+                qr.make();
+
+                qrContainer.innerHTML = qr.createSvgTag({cellSize: 6, margin: 2});
+                const svg = qrContainer.querySelector('svg');
+                if (svg) {
+                    svg.style.display = 'block';
+                    svg.style.borderRadius = '8px';
+                }
+
+                if (qrCenterLogo.checked) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'absolute inset-0 m-auto w-12 h-12 bg-white rounded-xl shadow-md border border-zinc-200 flex items-center justify-center overflow-hidden';
+                    if (qrLogoType.value === 'small-icon') {
+                        overlay.innerHTML = `<img src="small-icon.png" class="w-10 h-10 rounded-lg object-cover" onerror="this.parentElement.innerHTML='🐾'">`;
+                    } else {
+                        overlay.innerHTML = `<span class="text-xl">🐾</span>`;
+                    }
+                    qrContainer.appendChild(overlay);
+                }
+            } catch (e) {
+                qrContainer.innerHTML = `<p class="text-xs text-red-500 p-4">Text too long for QR size.</p>`;
+            }
+        }
+
+        qrInput.addEventListener('input', generateQR);
+        qrCenterLogo.addEventListener('change', generateQR);
+        qrLogoType.addEventListener('change', generateQR);
+
+        document.getElementById('btnDownloadQr').addEventListener('click', () => {
+            const svg = qrContainer.querySelector('svg');
+            if (!svg) return;
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'grizzly_qr.svg';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            showToast('QR code downloaded');
+        });
+
+        /* ---------- Tab 2: Tracker Remover ---------- */
+        const trackedUrlInput = document.getElementById('trackedUrlInput');
+        const cleanUrlOutput = document.getElementById('cleanUrlOutput');
+        const TRACKING_PARAMS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid', 'igshid', 'si', '_hsenc', '_hsmi', 'mc_cid', 'mc_eid'];
+
+        document.getElementById('btnCleanUrl').addEventListener('click', () => {
+            const val = trackedUrlInput.value.trim();
+            if (!val) return;
+            try {
+                const url = new URL(val);
+                TRACKING_PARAMS.forEach(p => url.searchParams.delete(p));
+                cleanUrlOutput.value = url.toString();
+                showToast('Trackers stripped successfully');
+            } catch (e) {
+                let cleaned = val;
+                TRACKING_PARAMS.forEach(p => {
+                    cleaned = cleaned.replace(new RegExp(`([?&])${p}=[^&]*(&)?`, 'i'), (match, p1, p2) => (p2 ? p1 : ''));
+                });
+                cleanUrlOutput.value = cleaned;
+                showToast('Trackers stripped');
+            }
+        });
+
+        document.getElementById('btnCopyCleanUrl').addEventListener('click', () => {
+            if (!cleanUrlOutput.value) return;
+            navigator.clipboard.writeText(cleanUrlOutput.value);
+            showToast('Clean URL copied to clipboard');
+        });
+
+        /* ---------- Tab 3: Network & Ping ---------- */
+        async function pingTarget(url) {
+            const start = performance.now();
+            try {
+                await fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+                return Math.round(performance.now() - start) + ' ms';
+            } catch (e) {
+                return 'Failed';
+            }
+        }
+
+        async function runPingTests() {
+            document.getElementById('pingCloudflare').textContent = 'Pinging...';
+            document.getElementById('pingGoogle').textContent = 'Pinging...';
+            document.getElementById('pingNextDns').textContent = 'Pinging...';
+
+            document.getElementById('pingCloudflare').textContent = await pingTarget('https://1.1.1.1');
+            document.getElementById('pingGoogle').textContent = await pingTarget('https://8.8.8.8');
+            document.getElementById('pingNextDns').textContent = await pingTarget('https://dns.nextdns.io');
+        }
+
+        async function fetchIpLocation() {
+            document.getElementById('netPublicIp').textContent = 'Checking...';
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                document.getElementById('netPublicIp').textContent = data.ip || 'Unknown';
+            } catch (e) {
+                document.getElementById('netPublicIp').textContent = 'Offline / Blocked';
+            }
+        }
+
+        async function runSpeedTest() {
+            const speedDisplay = document.getElementById('speedDisplay');
+            const speedTimeDisplay = document.getElementById('speedTimeDisplay');
+            speedDisplay.textContent = 'Testing...';
+            speedTimeDisplay.textContent = 'Transferring...';
+
+            const start = performance.now();
+            try {
+                // Fetch a small 1MB test asset
+                const res = await fetch('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css?cache=' + Math.random(), { cache: 'no-store' });
+                const blob = await res.blob();
+                const end = performance.now();
+
+                const durationSec = (end - start) / 1000;
+                const speedMbps = ((blob.size * 8) / (durationSec * 1024 * 1024)).toFixed(2);
+
+                speedDisplay.textContent = `${speedMbps} Mbps`;
+                speedTimeDisplay.textContent = `${Math.round(end - start)} ms`;
+            } catch (e) {
+                speedDisplay.textContent = 'Failed';
+                speedTimeDisplay.textContent = 'Error';
+            }
+        }
+
+        function runNetworkChecks() {
+            document.getElementById('netStatus').textContent = navigator.onLine ? 'Online' : 'Offline';
+            document.getElementById('netStatus').className = navigator.onLine ? 'font-bold text-emerald-400' : 'font-bold text-red-500';
+            runPingTests();
+            fetchIpLocation();
+        }
+
+        document.getElementById('btnRunPing').addEventListener('click', runPingTests);
+        document.getElementById('btnFetchLocation').addEventListener('click', fetchIpLocation);
+        document.getElementById('btnRunSpeed').addEventListener('click', runSpeedTest);
+
+        /* ---------- Tab 4: Device Inspector ---------- */
+        async function runDeviceChecks() {
+            // Screen & DPR
+            document.getElementById('screenViewport').textContent = `${window.innerWidth} x ${window.innerHeight}`;
+            document.getElementById('screenDpr').textContent = window.devicePixelRatio || 1;
+
+            // System platform
+            document.getElementById('sysPlatform').textContent = navigator.platform || 'Unknown';
+            document.getElementById('sysCores').textContent = navigator.hardwareConcurrency || 'N/A';
+
+            // Storage quota
+            if (navigator.storage && navigator.storage.estimate) {
+                try {
+                    const estimate = await navigator.storage.estimate();
+                    const usedMb = (estimate.usage / (1024 * 1024)).toFixed(1);
+                    const quotaGb = (estimate.quota / (1024 * 1024 * 1024)).toFixed(1);
+                    document.getElementById('storageUsed').textContent = `${usedMb} MB`;
+                    document.getElementById('storageQuota').textContent = `${quotaGb} GB`;
+                } catch (e) {}
+            }
+
+            // Battery Status API
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    const updateBatt = () => {
+                        document.getElementById('battLevel').textContent = `${Math.round(battery.level * 100)}%`;
+                        document.getElementById('battStatus').textContent = battery.charging ? 'Charging ⚡' : 'Discharging';
+                    };
+                    updateBatt();
+                    battery.addEventListener('levelchange', updateBatt);
+                    battery.addEventListener('chargingchange', updateBatt);
+                } catch (e) {
+                    document.getElementById('battLevel').textContent = 'N/A';
+                    document.getElementById('battStatus').textContent = 'Not Supported';
+                }
+            } else {
+                document.getElementById('battLevel').textContent = 'N/A';
+                document.getElementById('battStatus').textContent = 'Restricted';
+            }
+        }
+
+        /* ---------- Modals ---------- */
+        document.getElementById('openSettingsBtn').addEventListener('click', () => {
+            document.getElementById('settingsModal').classList.remove('hidden');
+        });
+
+        document.querySelectorAll('.closeModalBtn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('settingsModal').classList.add('hidden');
+            });
+        });
+
+        /* ---------- Startup ---------- */
+        window.addEventListener('DOMContentLoaded', () => {
+            initPreferences();
+            generateQR();
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('./sw.js').catch((err) => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>

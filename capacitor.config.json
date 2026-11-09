@@ -1,0 +1,6 @@
+{
+  "appId": "com.reaper357.grizzlyutility",
+  "appName": "grizzly-utility",
+  "webDir": "www"
+  "bundledWebRuntime": false
+}
